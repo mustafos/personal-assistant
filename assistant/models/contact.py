@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
+from uuid import UUID, uuid4
 
 from assistant.models.fields import EmailAddress, PhoneNumber, normalize_label
 
@@ -11,8 +12,10 @@ from assistant.models.fields import EmailAddress, PhoneNumber, normalize_label
 class Contact:
     """A person stored in the address book.
 
-    ``name`` identifies a contact. Persistence code should convert instances
-    with :meth:`to_dict` and restore them with :meth:`from_dict`.
+    ``id`` identifies a contact. More than one contact may use the same name.
+    ``id`` is generated with ``uuid4`` when the caller does not supply one.
+    Persistence code should convert instances with :meth:`to_dict` and restore
+    them with :meth:`from_dict`.
     """
 
     name: str
@@ -20,6 +23,7 @@ class Contact:
     phones: list[PhoneNumber] = field(default_factory=list)
     email: EmailAddress | None = None
     birthday: date | None = None
+    id: UUID = field(default_factory=uuid4)
 
     def __post_init__(self) -> None:
         self.name = normalize_label(self.name, field_name="Contact name")
@@ -36,14 +40,17 @@ class Contact:
             raise TypeError("Email must be an EmailAddress or None.")
         if self.birthday is not None and not isinstance(self.birthday, date):
             raise TypeError("Birthday must be a datetime.date or None.")
+        if not isinstance(self.id, UUID):
+            raise TypeError("Contact id must be a UUID.")
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-ready mapping.
 
-        Phones and email are plain strings. ``birthday`` is an ISO date
-        (``YYYY-MM-DD``) or ``None``.
+        ``id`` is a canonical UUID string. Phones and email are plain strings.
+        ``birthday`` is an ISO date (``YYYY-MM-DD``) or ``None``.
         """
         return {
+            "id": str(self.id),
             "name": self.name,
             "address": self.address,
             "phones": [phone.value for phone in self.phones],
@@ -56,18 +63,22 @@ class Contact:
         """Rebuild a contact from :meth:`to_dict` output.
 
         Args:
-            data: Mapping with ``name`` and optional contact fields.
+            data: Mapping with ``id``, ``name``, and optional contact fields.
 
         Returns:
-            A new contact.
+            A new contact that keeps the stored id.
 
         Raises:
             TypeError: If ``data`` or a field has an unexpected type.
             KeyError: If ``name`` is missing.
-            ValueError: If a field value cannot be used.
+            ValueError: If ``id`` is not a UUID or a field value is unusable.
         """
         if not isinstance(data, dict):
             raise TypeError("Contact data must be a mapping.")
+
+        contact_id = data.get("id")
+        if not isinstance(contact_id, str):
+            raise TypeError("Contact field 'id' must be a string.")
 
         phones_raw = data.get("phones", [])
         if not isinstance(phones_raw, list):
@@ -104,6 +115,7 @@ class Contact:
             phones=phones,
             email=email,
             birthday=birthday,
+            id=UUID(contact_id),
         )
 
 

@@ -24,7 +24,9 @@ Current status:
 - Models can be created and converted to dictionaries.
 - `JSONStorage` can load and save a JSON list.
 - Service methods define the contracts and still need their implementations.
+- Contacts and notes are identified by UUID. Contact names may be repeated.
 - The CLI starts, lists commands, checks basic command shape, and exits.
+- Contact and note commands are registered scaffolds.
 - Phone and email validators are reserved function names.
 
 ## Project structure
@@ -63,6 +65,7 @@ Contact:
 
 ```json
 {
+  "id": "6f1c2a90-1b2e-4d55-9a0c-7e8f6a5b4c3d",
   "name": "Ada Lovelace",
   "address": "London",
   "phones": ["+44 20 7946 0991"],
@@ -82,6 +85,8 @@ Note:
 }
 ```
 
+Both models use `to_dict()` and `from_dict()`. `id` is a UUID string and is the
+only identity of a record. A contact name does not have to be unique.
 `birthday` and `email` may be `null`. `phones` and `tags` may be empty lists.
 
 ## Installation
@@ -119,7 +124,8 @@ Suggested split for parallel work:
 | Command editing flow | `assistant/cli/commands.py` |
 
 Keep the method signatures already documented on the service classes. Load and
-save records through the injected `Storage` object.
+save records through the injected `Storage` object, and match records by `id`.
+`find-contact`, `update-contact`, and `delete-contact` take that id.
 
 ## Startup
 
@@ -146,9 +152,8 @@ Data files are created only when a future service saves records:
 
 Set `PERSONAL_ASSISTANT_DATA_DIR` to store those files somewhere else.
 
-Data commands such as `add-contact` currently answer that the command is not
-implemented yet. `update-contact` and `update-note` are reserved for field
-editing and are also unimplemented.
+Data commands check their argument shape, then report that the command is not
+implemented yet.
 
 ## Testing
 

@@ -81,12 +81,24 @@ def test_contact_normalizes_fields_and_round_trips() -> None:
     assert contact.phones[0].value == "+44 20"
     assert contact.email is not None
     assert contact.email.value == "ada@example.com"
-    assert Contact.from_dict(contact.to_dict()) == contact
+    restored = Contact.from_dict(contact.to_dict())
+    assert restored == contact
+    assert restored.id == contact.id
+    assert contact.to_dict()["id"] == str(contact.id)
 
 
 def test_contact_rejects_blank_name() -> None:
     with pytest.raises(ValueError):
         Contact(name="   ")
+
+
+def test_contacts_may_share_a_name() -> None:
+    first = Contact(name="Ada Lovelace")
+    second = Contact(name="Ada Lovelace")
+
+    assert first.name == second.name
+    assert first.id != second.id
+    assert Contact.from_dict(first.to_dict()).id == first.id
 
 
 def test_note_round_trip_keeps_id_and_tags() -> None:
@@ -161,6 +173,12 @@ def test_services_do_not_persist_or_implement_operations(tmp_path: Path) -> None
 
     with pytest.raises(NotImplementedError):
         contacts.add_contact(contact)
+    with pytest.raises(NotImplementedError):
+        contacts.get_contact(contact.id)
+    with pytest.raises(NotImplementedError):
+        contacts.update_contact(contact)
+    with pytest.raises(NotImplementedError):
+        contacts.delete_contact(contact.id)
     with pytest.raises(NotImplementedError):
         contacts.list_contacts()
     with pytest.raises(NotImplementedError):

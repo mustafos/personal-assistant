@@ -1,5 +1,7 @@
 """Business operations for contacts."""
 
+from uuid import UUID
+
 from assistant.models.contact import Contact
 from assistant.storage.storage import Storage
 
@@ -9,10 +11,12 @@ class ContactService:
 
     Pass a :class:`~assistant.storage.storage.Storage` instance. This class
     must not open files or import the JSON backend. An implementation should
-    load records, convert them with :meth:`Contact.from_dict`, change the
-    list, and save ``contact.to_dict()`` mappings through the same storage.
+    load records with ``storage.load()``, rebuild them with
+    :meth:`Contact.from_dict`, and save ``contact.to_dict()`` mappings with
+    ``storage.save``. Match a stored record by ``Contact.id``. Names are not
+    unique, so they cannot identify a record.
 
-    Name comparisons are case-insensitive. Stored capitalization is kept.
+    Search may compare text case-insensitively. Stored capitalization is kept.
     Each method raises ``NotImplementedError`` until it is implemented.
     Other exceptions named on a method describe the contract the
     implementation must follow.
@@ -34,18 +38,18 @@ class ContactService:
 
         Raises:
             NotImplementedError: Saving contacts is not implemented yet.
-            ValueError: If a contact with the same name already exists.
+            ValueError: If a contact with the same id already exists.
         """
         raise NotImplementedError("ContactService.add_contact is not implemented yet.")
 
-    def get_contact(self, name: str) -> Contact | None:
-        """Return the contact named ``name``.
+    def get_contact(self, contact_id: UUID) -> Contact | None:
+        """Return the contact identified by ``contact_id``.
 
         Args:
-            name: Contact name. Lookup ignores case and extra whitespace.
+            contact_id: Identifier stored on the contact.
 
         Returns:
-            The stored contact, or None when no name matches.
+            The stored contact, or None when the id is unknown.
 
         Raises:
             NotImplementedError: Contact lookup is not implemented yet.
@@ -84,32 +88,30 @@ class ContactService:
             "ContactService.search_contacts is not implemented yet."
         )
 
-    def update_contact(self, name: str, contact: Contact) -> None:
-        """Replace the contact currently stored under ``name``.
+    def update_contact(self, contact: Contact) -> None:
+        """Replace the stored contact that has ``contact.id``.
 
         Args:
-            name: Name of the contact to replace. Lookup ignores case.
-            contact: New contact value. Its name may differ, which renames
-                the record.
+            contact: New contact value, including the id of the contact to
+                replace. The name may change and may match another contact.
 
         Raises:
             NotImplementedError: Contact updates are not implemented yet.
-            LookupError: If no contact uses ``name``.
-            ValueError: If the new name belongs to a different contact.
+            LookupError: If no stored contact uses ``contact.id``.
         """
         raise NotImplementedError(
             "ContactService.update_contact is not implemented yet."
         )
 
-    def delete_contact(self, name: str) -> None:
-        """Remove the contact named ``name``.
+    def delete_contact(self, contact_id: UUID) -> None:
+        """Remove the contact identified by ``contact_id``.
 
         Args:
-            name: Name to delete. Lookup ignores case.
+            contact_id: Identifier of the contact to remove.
 
         Raises:
             NotImplementedError: Contact deletion is not implemented yet.
-            LookupError: If no contact uses ``name``.
+            LookupError: If no stored contact uses ``contact_id``.
         """
         raise NotImplementedError(
             "ContactService.delete_contact is not implemented yet."

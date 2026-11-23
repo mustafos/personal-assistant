@@ -11,9 +11,9 @@ from assistant.models.fields import normalize_label
 class Note:
     """A note with a stable identifier, text, and tags.
 
-    ``id`` is generated with ``uuid4`` when the caller does not supply one.
-    Persistence code should convert instances with :meth:`to_dict` and
-    restore them with :meth:`from_dict`.
+    ``id`` identifies a note. ``id`` is generated with ``uuid4`` when the
+    caller does not supply one. Persistence code should convert instances
+    with :meth:`to_dict` and restore them with :meth:`from_dict`.
     """
 
     title: str

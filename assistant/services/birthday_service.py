@@ -7,8 +7,9 @@ from assistant.services.contact_service import ContactService
 class BirthdayService:
     """Find contacts with upcoming birthdays.
 
-    Read contacts through :class:`ContactService`. This service does not
-    receive a storage backend and does not calculate birthdays yet.
+    Read contacts through :meth:`ContactService.list_contacts` and keep each
+    contact's ``id``. This service does not receive a storage backend and does
+    not calculate birthdays yet.
     """
 
     def __init__(self, contact_service: ContactService) -> None:
