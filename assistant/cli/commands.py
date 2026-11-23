@@ -1,15 +1,14 @@
 """CLI command definitions.
 
-Handlers parse arguments and call services. Duplicate checks, search matching,
-tag rules, and birthday calculations stay in the service layer.
+Commands are registered here. Handlers check argument shape and stop.
+Search, persistence, tag rules, and birthday calculations stay unimplemented
+in the service layer.
 """
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID
 
-from assistant.models.contact import Contact
-from assistant.models.note import Note
 from assistant.services.birthday_service import BirthdayService
 from assistant.services.contact_service import ContactService
 from assistant.services.note_service import NoteService
@@ -55,7 +54,11 @@ class CommandRegistry:
 
 
 class CommandHandler:
-    """Parse CLI arguments and delegate to services."""
+    """Scaffold for CLI commands.
+
+    The constructor keeps the services that a future handler will call.
+    Methods below only check that the command line has the expected shape.
+    """
 
     def __init__(
         self,
@@ -63,11 +66,11 @@ class CommandHandler:
         notes: NoteService,
         birthdays: BirthdayService,
     ) -> None:
-        """Keep the services used by command handlers.
+        """Keep the services reserved for command implementations.
 
         Args:
-            contacts: Contact operations.
-            notes: Note and tag operations.
+            contacts: Contact operations. Use ``Contact.id`` when calling them.
+            notes: Note and tag operations. Use ``Note.id`` when calling them.
             birthdays: Upcoming-birthday queries.
         """
         self._contacts = contacts
@@ -75,171 +78,100 @@ class CommandHandler:
         self._birthdays = birthdays
 
     def add_contact(self, args: list[str]) -> str:
-        """Handle ``add-contact <name>``."""
-        name = _require_text(args)
-        if name is None:
+        """Scaffold for ``add-contact <name>``."""
+        if _require_text(args) is None:
             return "Usage: add-contact <name>"
-        contact = Contact(name=name)
-        self._contacts.add_contact(contact)
-        return f"Added contact '{contact.name}'."
+        raise NotImplementedError
 
     def list_contacts(self, args: list[str]) -> str:
-        """Handle ``list-contacts``."""
+        """Scaffold for ``list-contacts``."""
         if args:
             return "Usage: list-contacts"
-        contacts = self._contacts.list_contacts()
-        if not contacts:
-            return "No contacts saved."
-        return "\n".join(contact.name for contact in contacts)
+        raise NotImplementedError
 
     def find_contact(self, args: list[str]) -> str:
-        """Handle ``find-contact <name>``."""
-        name = _require_text(args)
-        if name is None:
-            return "Usage: find-contact <name>"
-        contact = self._contacts.get_contact(name)
-        if contact is None:
-            return f"No contact named '{name}'."
-        return _format_contact(contact)
+        """Scaffold for ``find-contact <id>``."""
+        return _unimplemented_id(args, "find-contact <id>")
 
     def search_contacts(self, args: list[str]) -> str:
-        """Handle ``search-contacts <query>``."""
-        query = _require_text(args)
-        if query is None:
+        """Scaffold for ``search-contacts <query>``."""
+        if _require_text(args) is None:
             return "Usage: search-contacts <query>"
-        matches = self._contacts.search_contacts(query)
-        if not matches:
-            return "No contacts found."
-        return "\n".join(contact.name for contact in matches)
+        raise NotImplementedError
 
     def update_contact(self, args: list[str]) -> str:
-        """Handle ``update-contact <name>``.
-
-        Editing individual fields from the command line is not available yet.
-        """
-        if _require_text(args) is None:
-            return "Usage: update-contact <name>"
-        raise NotImplementedError
+        """Scaffold for ``update-contact <id>``."""
+        return _unimplemented_id(args, "update-contact <id>")
 
     def delete_contact(self, args: list[str]) -> str:
-        """Handle ``delete-contact <name>``."""
-        name = _require_text(args)
-        if name is None:
-            return "Usage: delete-contact <name>"
-        self._contacts.delete_contact(name)
-        return f"Deleted contact '{name}'."
+        """Scaffold for ``delete-contact <id>``."""
+        return _unimplemented_id(args, "delete-contact <id>")
 
     def add_note(self, args: list[str]) -> str:
-        """Handle ``add-note <title>``.
-
-        The note content is empty until note editing is implemented.
-        """
-        title = _require_text(args)
-        if title is None:
+        """Scaffold for ``add-note <title>``."""
+        if _require_text(args) is None:
             return "Usage: add-note <title>"
-        note = Note(title=title, content="")
-        self._notes.add_note(note)
-        return f"Added note '{note.title}' ({note.id})."
-
-    def list_notes(self, args: list[str]) -> str:
-        """Handle ``list-notes``."""
-        if args:
-            return "Usage: list-notes"
-        notes = self._notes.list_notes()
-        if not notes:
-            return "No notes saved."
-        return "\n".join(f"{note.id}  {note.title}" for note in notes)
-
-    def find_note(self, args: list[str]) -> str:
-        """Handle ``find-note <id>``."""
-        note_id = _require_note_id(args, "find-note <id>")
-        if isinstance(note_id, str):
-            return note_id
-        note = self._notes.get_note(note_id)
-        if note is None:
-            return f"No note with id '{note_id}'."
-        return _format_note(note)
-
-    def search_notes(self, args: list[str]) -> str:
-        """Handle ``search-notes <query>``."""
-        query = _require_text(args)
-        if query is None:
-            return "Usage: search-notes <query>"
-        matches = self._notes.search_notes(query)
-        if not matches:
-            return "No notes found."
-        return "\n".join(f"{note.id}  {note.title}" for note in matches)
-
-    def update_note(self, args: list[str]) -> str:
-        """Handle ``update-note <id>``.
-
-        Editing note fields from the command line is not available yet.
-        """
-        note_id = _require_note_id(args, "update-note <id>")
-        if isinstance(note_id, str):
-            return note_id
         raise NotImplementedError
 
+    def list_notes(self, args: list[str]) -> str:
+        """Scaffold for ``list-notes``."""
+        if args:
+            return "Usage: list-notes"
+        raise NotImplementedError
+
+    def find_note(self, args: list[str]) -> str:
+        """Scaffold for ``find-note <id>``."""
+        return _unimplemented_id(args, "find-note <id>")
+
+    def search_notes(self, args: list[str]) -> str:
+        """Scaffold for ``search-notes <query>``."""
+        if _require_text(args) is None:
+            return "Usage: search-notes <query>"
+        raise NotImplementedError
+
+    def update_note(self, args: list[str]) -> str:
+        """Scaffold for ``update-note <id>``."""
+        return _unimplemented_id(args, "update-note <id>")
+
     def delete_note(self, args: list[str]) -> str:
-        """Handle ``delete-note <id>``."""
-        note_id = _require_note_id(args, "delete-note <id>")
-        if isinstance(note_id, str):
-            return note_id
-        self._notes.delete_note(note_id)
-        return f"Deleted note '{note_id}'."
+        """Scaffold for ``delete-note <id>``."""
+        return _unimplemented_id(args, "delete-note <id>")
 
     def add_tag(self, args: list[str]) -> str:
-        """Handle ``add-tag <note-id> <tag>``."""
+        """Scaffold for ``add-tag <note-id> <tag>``."""
         parsed = _note_id_and_tag(args, "add-tag <note-id> <tag>")
         if isinstance(parsed, str):
             return parsed
-        note_id, tag = parsed
-        self._notes.add_tag(note_id, tag)
-        return f"Added tag '{tag}' to note '{note_id}'."
+        raise NotImplementedError
 
     def remove_tag(self, args: list[str]) -> str:
-        """Handle ``remove-tag <note-id> <tag>``."""
+        """Scaffold for ``remove-tag <note-id> <tag>``."""
         parsed = _note_id_and_tag(args, "remove-tag <note-id> <tag>")
         if isinstance(parsed, str):
             return parsed
-        note_id, tag = parsed
-        self._notes.remove_tag(note_id, tag)
-        return f"Removed tag '{tag}' from note '{note_id}'."
+        raise NotImplementedError
 
     def notes_by_tag(self, args: list[str]) -> str:
-        """Handle ``notes-by-tag <tag>``."""
-        tag = _require_text(args)
-        if tag is None:
+        """Scaffold for ``notes-by-tag <tag>``."""
+        if _require_text(args) is None:
             return "Usage: notes-by-tag <tag>"
-        matches = self._notes.find_by_tag(tag)
-        if not matches:
-            return f"No notes tagged '{tag}'."
-        return "\n".join(f"{note.id}  {note.title}" for note in matches)
+        raise NotImplementedError
 
     def birthdays(self, args: list[str]) -> str:
-        """Handle ``birthdays [days]``.
+        """Scaffold for ``birthdays [days]``.
 
-        When ``days`` is omitted, the window is 7 days.
+        When ``days`` is omitted, the intended window is 7 days.
         """
         if len(args) > 1:
             return "Usage: birthdays [days]"
-        days = 7
         if args:
             try:
                 days = int(args[0])
             except ValueError:
                 return "Usage: birthdays [days]"
-        if days < 0:
-            return "Days must be zero or greater."
-        matches = self._birthdays.upcoming_birthdays(days)
-        unit = "day" if days == 1 else "days"
-        if not matches:
-            return f"No birthdays in the next {days} {unit}."
-        lines = [f"Birthdays in the next {days} {unit}:"]
-        for contact in matches:
-            shown = contact.birthday.isoformat() if contact.birthday else "unknown"
-            lines.append(f"{contact.name} ({shown})")
-        return "\n".join(lines)
+            if days < 0:
+                return "Days must be zero or greater."
+        raise NotImplementedError
 
 
 def build_registry(handler: CommandHandler) -> CommandRegistry:
@@ -256,8 +188,8 @@ def build_registry(handler: CommandHandler) -> CommandRegistry:
         ("list-contacts", "List all contacts", "list-contacts", handler.list_contacts),
         (
             "find-contact",
-            "Show a contact by name",
-            "find-contact <name>",
+            "Show a contact by id",
+            "find-contact <id>",
             handler.find_contact,
         ),
         (
@@ -269,13 +201,13 @@ def build_registry(handler: CommandHandler) -> CommandRegistry:
         (
             "update-contact",
             "Update a contact",
-            "update-contact <name>",
+            "update-contact <id>",
             handler.update_contact,
         ),
         (
             "delete-contact",
             "Delete a contact",
-            "delete-contact <name>",
+            "delete-contact <id>",
             handler.delete_contact,
         ),
         ("add-note", "Add a note", "add-note <title>", handler.add_note),
@@ -332,14 +264,22 @@ def _require_text(args: list[str]) -> str | None:
     return text
 
 
-def _require_note_id(args: list[str], usage: str) -> UUID | str:
-    """Parse a single note id, or return a usage message."""
+def _require_id(args: list[str], usage: str) -> UUID | str:
+    """Parse a single UUID argument, or return a usage message."""
     if len(args) != 1:
         return f"Usage: {usage}"
     try:
         return UUID(args[0])
     except ValueError:
-        return "Note id must be a valid UUID."
+        return "Id must be a valid UUID."
+
+
+def _unimplemented_id(args: list[str], usage: str) -> str:
+    """Accept one UUID, then leave the command unimplemented."""
+    parsed = _require_id(args, usage)
+    if isinstance(parsed, str):
+        return parsed
+    raise NotImplementedError
 
 
 def _note_id_and_tag(args: list[str], usage: str) -> tuple[UUID, str] | str:
@@ -354,26 +294,6 @@ def _note_id_and_tag(args: list[str], usage: str) -> tuple[UUID, str] | str:
     if not tag:
         return f"Usage: {usage}"
     return note_id, tag
-
-
-def _format_contact(contact: Contact) -> str:
-    phones = ", ".join(phone.value for phone in contact.phones) or "none"
-    email = contact.email.value if contact.email else "none"
-    birthday = contact.birthday.isoformat() if contact.birthday else "none"
-    address = contact.address or "none"
-    return (
-        f"Name: {contact.name}\n"
-        f"Address: {address}\n"
-        f"Phones: {phones}\n"
-        f"Email: {email}\n"
-        f"Birthday: {birthday}"
-    )
-
-
-def _format_note(note: Note) -> str:
-    tags = ", ".join(note.tags) or "none"
-    content = note.content or "none"
-    return f"Id: {note.id}\nTitle: {note.title}\nTags: {tags}\nContent: {content}"
 
 
 __all__ = ["Command", "CommandHandler", "CommandRegistry", "build_registry"]

@@ -10,9 +10,9 @@ class NoteService:
     """Create, read, search, update, and delete notes.
 
     Pass a :class:`~assistant.storage.storage.Storage` instance that is
-    separate from contact storage. Follow the same load, convert, and save
-    pattern as :class:`~assistant.services.contact_service.ContactService`,
-    using :meth:`Note.from_dict` and :meth:`Note.to_dict`.
+    separate from contact storage. Load records with ``storage.load()``,
+    rebuild them with :meth:`Note.from_dict`, and save ``note.to_dict()``
+    mappings with ``storage.save``. Match a stored record by ``Note.id``.
 
     Tag comparisons are case-insensitive.
     Each method raises ``NotImplementedError`` until it is implemented.
