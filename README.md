@@ -113,19 +113,25 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
-Suggested split for parallel work:
+Integration happens on `develop`. Feature branches start from `develop`.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/onboarding.md](docs/onboarding.md)
+before opening a branch.
 
-| Area | Modules |
-| --- | --- |
-| Contacts | `assistant/services/contact_service.py` |
-| Notes and tags | `assistant/services/note_service.py` |
-| Birthdays | `assistant/services/birthday_service.py` |
-| Validation | `assistant/utils/validators.py` |
-| Command editing flow | `assistant/cli/commands.py` |
+| Issue | Scope | Modules |
+| --- | --- | --- |
+| #2 | Contact CRUD and birthday queries | `assistant/services/contact_service.py`, `assistant/services/birthday_service.py` |
+| #3 | Note CRUD only | Note methods in `assistant/services/note_service.py`, except tag methods |
+| #4 | JSON storage reliability and input validators | `assistant/storage/json_storage.py`, `assistant/utils/validators.py` |
+| #5 | CLI and integration | `assistant/cli/` |
+| #6 | Bonus: note tags, filtering, and sorting | Tag methods in `assistant/services/note_service.py` |
+
+Birthday code stays in #2. Tag behavior stays in #6. Details are in
+[docs/issue-scope.md](docs/issue-scope.md).
 
 Keep the method signatures already documented on the service classes. Load and
 save records through the injected `Storage` object, and match records by `id`.
-`find-contact`, `update-contact`, and `delete-contact` take that id.
+`find-contact`, `update-contact`, and `delete-contact` take that id. Adding and
+editing use the prompts in [docs/cli-contracts.md](docs/cli-contracts.md).
 
 ## Startup
 
