@@ -18,7 +18,6 @@ from assistant.services.note_service import NoteService
 from assistant.storage.json_storage import JSONStorage
 from assistant.storage.storage import StorageError
 from assistant.utils.helpers import normalize_whitespace, parse_iso_date
-from assistant.utils.validators import is_valid_email, is_valid_phone
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -192,13 +191,6 @@ def test_services_do_not_persist_or_implement_operations(tmp_path: Path) -> None
 
     assert not contact_storage.path.exists()
     assert not note_storage.path.exists()
-
-
-def test_validation_rules_are_not_implemented() -> None:
-    with pytest.raises(NotImplementedError):
-        is_valid_phone("+44 20")
-    with pytest.raises(NotImplementedError):
-        is_valid_email("ada@example.com")
 
 
 def test_helpers() -> None:
