@@ -15,9 +15,6 @@ class NoteService:
     mappings with ``storage.save``. Match a stored record by ``Note.id``.
 
     Tag comparisons are case-insensitive.
-    Each method raises ``NotImplementedError`` until it is implemented.
-    Other exceptions named on a method describe the contract the
-    implementation must follow.
     """
 
     def __init__(self, storage: Storage) -> None:
@@ -28,6 +25,30 @@ class NoteService:
         """
         self._storage = storage
 
+    def _load_notes(self) -> list[Note]:
+        """Load stored note records and rebuild Note instances."""
+        raw_records = self._storage.load()
+        return [Note.from_dict(record) for record in raw_records]
+
+    def _save_notes(self, notes: list[Note]) -> None:
+        """Serialize Note instances and persist them via storage."""
+        self._storage.save([note.to_dict() for note in notes])
+
+    @staticmethod
+    def _normalize_tag(tag: str) -> str:
+        """Validate and trim a tag string, raising ValueError if blank."""
+        cleaned = " ".join(tag.strip().split())
+        if not cleaned:
+            raise ValueError("Tag must not be empty.")
+        return cleaned
+
+    @staticmethod
+    def _matches_query(note: Note, needle: str) -> bool:
+        """Check whether title, content, or any tag contains the lowercased needle."""
+        parts: list[str] = [note.title, note.content]
+        parts.extend(note.tags)
+        return any(needle in part.casefold() for part in parts)
+
     def add_note(self, note: Note) -> None:
         """Store a new note.
 
@@ -35,10 +56,14 @@ class NoteService:
             note: Note to add. Its ``id`` must stay unique.
 
         Raises:
-            NotImplementedError: Saving notes is not implemented yet.
             ValueError: If a note with the same id already exists.
         """
-        raise NotImplementedError("NoteService.add_note is not implemented yet.")
+        notes = self._load_notes()
+        if any(existing.id == note.id for existing in notes):
+            raise ValueError(f"Note with id {note.id} already exists.")
+
+        notes.append(note)
+        self._save_notes(notes)
 
     def get_note(self, note_id: UUID) -> Note | None:
         """Return the note with ``note_id``.
@@ -48,22 +73,19 @@ class NoteService:
 
         Returns:
             The stored note, or None when the id is unknown.
-
-        Raises:
-            NotImplementedError: Note lookup is not implemented yet.
         """
-        raise NotImplementedError("NoteService.get_note is not implemented yet.")
+        for note in self._load_notes():
+            if note.id == note_id:
+                return note
+        return None
 
     def list_notes(self) -> list[Note]:
         """Return every stored note.
 
         Returns:
             All notes. The order matches the stored collection.
-
-        Raises:
-            NotImplementedError: Listing notes is not implemented yet.
         """
-        raise NotImplementedError("NoteService.list_notes is not implemented yet.")
+        return self._load_notes()
 
     def search_notes(self, query: str) -> list[Note]:
         """Find notes that match ``query``.
@@ -75,11 +97,16 @@ class NoteService:
 
         Returns:
             Matching notes. An empty list means nothing matched.
-
-        Raises:
-            NotImplementedError: Note search is not implemented yet.
         """
-        raise NotImplementedError("NoteService.search_notes is not implemented yet.")
+        needle = " ".join(query.strip().split()).casefold()
+        if not needle:
+            return []
+
+        return [
+            note
+            for note in self._load_notes()
+            if self._matches_query(note, needle)
+        ]
 
     def update_note(self, note: Note) -> None:
         """Replace the stored note that has ``note.id``.
@@ -88,10 +115,16 @@ class NoteService:
             note: New note value, including the id of the note to replace.
 
         Raises:
-            NotImplementedError: Note updates are not implemented yet.
             LookupError: If no stored note uses ``note.id``.
         """
-        raise NotImplementedError("NoteService.update_note is not implemented yet.")
+        notes = self._load_notes()
+        for index, existing in enumerate(notes):
+            if existing.id == note.id:
+                notes[index] = note
+                self._save_notes(notes)
+                return
+
+        raise LookupError(f"Note not found: {note.id}")
 
     def delete_note(self, note_id: UUID) -> None:
         """Remove the note identified by ``note_id``.
@@ -100,10 +133,14 @@ class NoteService:
             note_id: Identifier of the note to remove.
 
         Raises:
-            NotImplementedError: Note deletion is not implemented yet.
             LookupError: If no stored note uses ``note_id``.
         """
-        raise NotImplementedError("NoteService.delete_note is not implemented yet.")
+        notes = self._load_notes()
+        remaining = [existing for existing in notes if existing.id != note_id]
+        if len(remaining) == len(notes):
+            raise LookupError(f"Note not found: {note_id}")
+
+        self._save_notes(remaining)
 
     def add_tag(self, note_id: UUID, tag: str) -> None:
         """Attach ``tag`` to a note.
@@ -115,11 +152,28 @@ class NoteService:
             tag: Tag text. Implementations should reject a blank tag.
 
         Raises:
-            NotImplementedError: Tag management is not implemented yet.
             LookupError: If no stored note uses ``note_id``.
             ValueError: If ``tag`` is empty.
         """
-        raise NotImplementedError("NoteService.add_tag is not implemented yet.")
+        cleaned_tag = self._normalize_tag(tag)
+        notes = self._load_notes()
+
+        for index, existing in enumerate(notes):
+            if existing.id == note_id:
+                if any(t.casefold() == cleaned_tag.casefold() for t in existing.tags):
+                    return
+
+                updated_tags = [*existing.tags, cleaned_tag]
+                notes[index] = Note(
+                    title=existing.title,
+                    content=existing.content,
+                    tags=updated_tags,
+                    id=existing.id,
+                )
+                self._save_notes(notes)
+                return
+
+        raise LookupError(f"Note not found: {note_id}")
 
     def remove_tag(self, note_id: UUID, tag: str) -> None:
         """Remove ``tag`` from a note.
@@ -131,11 +185,30 @@ class NoteService:
             tag: Tag text to remove.
 
         Raises:
-            NotImplementedError: Tag management is not implemented yet.
             LookupError: If no stored note uses ``note_id``.
             ValueError: If ``tag`` is empty.
         """
-        raise NotImplementedError("NoteService.remove_tag is not implemented yet.")
+        cleaned_tag = self._normalize_tag(tag)
+        notes = self._load_notes()
+
+        for index, existing in enumerate(notes):
+            if existing.id == note_id:
+                remaining_tags = [
+                    t for t in existing.tags if t.casefold() != cleaned_tag.casefold()
+                ]
+                if len(remaining_tags) == len(existing.tags):
+                    return
+
+                notes[index] = Note(
+                    title=existing.title,
+                    content=existing.content,
+                    tags=remaining_tags,
+                    id=existing.id,
+                )
+                self._save_notes(notes)
+                return
+
+        raise LookupError(f"Note not found: {note_id}")
 
     def find_by_tag(self, tag: str) -> list[Note]:
         """Return notes that include ``tag``.
@@ -147,10 +220,14 @@ class NoteService:
             Notes that carry the tag. An empty list means nothing matched.
 
         Raises:
-            NotImplementedError: Tag search is not implemented yet.
             ValueError: If ``tag`` is empty.
         """
-        raise NotImplementedError("NoteService.find_by_tag is not implemented yet.")
+        cleaned_tag = self._normalize_tag(tag).casefold()
+        return [
+            note
+            for note in self._load_notes()
+            if any(t.casefold() == cleaned_tag for t in note.tags)
+        ]
 
 
 __all__ = ["NoteService"]
