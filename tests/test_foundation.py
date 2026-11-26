@@ -162,33 +162,19 @@ def test_blank_storage_file_loads_as_empty(tmp_path: Path) -> None:
     assert storage.load() == []
 
 
-def test_services_do_not_persist_or_implement_operations(tmp_path: Path) -> None:
+def test_note_service_is_not_implemented_yet(tmp_path: Path) -> None:
     contact_storage = JSONStorage(tmp_path / "contacts.json")
     note_storage = JSONStorage(tmp_path / "notes.json")
-    contacts = ContactService(contact_storage)
+    birthdays = BirthdayService(ContactService(contact_storage))
     notes = NoteService(note_storage)
-    birthdays = BirthdayService(contacts)
-    contact = Contact(name="Ada Lovelace")
     note = Note(title="Lecture")
 
-    with pytest.raises(NotImplementedError):
-        contacts.add_contact(contact)
-    with pytest.raises(NotImplementedError):
-        contacts.get_contact(contact.id)
-    with pytest.raises(NotImplementedError):
-        contacts.update_contact(contact)
-    with pytest.raises(NotImplementedError):
-        contacts.delete_contact(contact.id)
-    with pytest.raises(NotImplementedError):
-        contacts.list_contacts()
     with pytest.raises(NotImplementedError):
         notes.add_note(note)
     with pytest.raises(NotImplementedError):
         notes.find_by_tag("school")
     with pytest.raises(ValueError):
         birthdays.upcoming_birthdays(-1)
-    with pytest.raises(NotImplementedError):
-        birthdays.upcoming_birthdays(7)
 
     assert not contact_storage.path.exists()
     assert not note_storage.path.exists()
