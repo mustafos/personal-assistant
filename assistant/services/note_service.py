@@ -1,156 +1,70 @@
-"""Business operations for notes and tags."""
-
 from uuid import UUID
 
 from assistant.models.note import Note
 from assistant.storage.storage import Storage
 
+__all__ = ["NoteService"]
+
 
 class NoteService:
-    """Create, read, search, update, and delete notes.
-
-    Pass a :class:`~assistant.storage.storage.Storage` instance that is
-    separate from contact storage. Load records with ``storage.load()``,
-    rebuild them with :meth:`Note.from_dict`, and save ``note.to_dict()``
-    mappings with ``storage.save``. Match a stored record by ``Note.id``.
-
-    Tag comparisons are case-insensitive.
-    Each method raises ``NotImplementedError`` until it is implemented.
-    Other exceptions named on a method describe the contract the
-    implementation must follow.
-    """
+    """Create, read, search, update, and delete notes."""
 
     def __init__(self, storage: Storage) -> None:
-        """Store the persistence dependency.
-
-        Args:
-            storage: Backend for the note collection.
-        """
         self._storage = storage
 
+    def _load_notes(self) -> list[Note]:
+        return [Note.from_dict(item) for item in self._storage.load()]
+
+    def _save_notes(self, notes: list[Note]) -> None:
+        self._storage.save([note.to_dict() for note in notes])
+
     def add_note(self, note: Note) -> None:
-        """Store a new note.
-
-        Args:
-            note: Note to add. Its ``id`` must stay unique.
-
-        Raises:
-            NotImplementedError: Saving notes is not implemented yet.
-            ValueError: If a note with the same id already exists.
-        """
-        raise NotImplementedError("NoteService.add_note is not implemented yet.")
+        notes = self._load_notes()
+        if any(existing.id == note.id for existing in notes):
+            raise ValueError(f"Note with id {note.id} already exists.")
+        notes.append(note)
+        self._save_notes(notes)
 
     def get_note(self, note_id: UUID) -> Note | None:
-        """Return the note with ``note_id``.
-
-        Args:
-            note_id: Identifier returned when the note was created.
-
-        Returns:
-            The stored note, or None when the id is unknown.
-
-        Raises:
-            NotImplementedError: Note lookup is not implemented yet.
-        """
-        raise NotImplementedError("NoteService.get_note is not implemented yet.")
+        for note in self._load_notes():
+            if note.id == note_id:
+                return note
+        return None
 
     def list_notes(self) -> list[Note]:
-        """Return every stored note.
-
-        Returns:
-            All notes. The order matches the stored collection.
-
-        Raises:
-            NotImplementedError: Listing notes is not implemented yet.
-        """
-        raise NotImplementedError("NoteService.list_notes is not implemented yet.")
+        return self._load_notes()
 
     def search_notes(self, query: str) -> list[Note]:
-        """Find notes that match ``query``.
-
-        The match is case-insensitive and covers title, content, and tags.
-
-        Args:
-            query: Text to look for. Callers should pass a non-empty string.
-
-        Returns:
-            Matching notes. An empty list means nothing matched.
-
-        Raises:
-            NotImplementedError: Note search is not implemented yet.
-        """
-        raise NotImplementedError("NoteService.search_notes is not implemented yet.")
+        normalized = query.lower()
+        return [
+            note
+            for note in self._load_notes()
+            if normalized in note.title.lower()
+            or normalized in note.content.lower()
+            or any(normalized in tag.lower() for tag in note.tags)
+        ]
 
     def update_note(self, note: Note) -> None:
-        """Replace the stored note that has ``note.id``.
-
-        Args:
-            note: New note value, including the id of the note to replace.
-
-        Raises:
-            NotImplementedError: Note updates are not implemented yet.
-            LookupError: If no stored note uses ``note.id``.
-        """
-        raise NotImplementedError("NoteService.update_note is not implemented yet.")
+        notes = self._load_notes()
+        for index, existing in enumerate(notes):
+            if existing.id == note.id:
+                notes[index] = note
+                self._save_notes(notes)
+                return
+        raise LookupError(f"Note with id {note.id} not found.")
 
     def delete_note(self, note_id: UUID) -> None:
-        """Remove the note identified by ``note_id``.
-
-        Args:
-            note_id: Identifier of the note to remove.
-
-        Raises:
-            NotImplementedError: Note deletion is not implemented yet.
-            LookupError: If no stored note uses ``note_id``.
-        """
-        raise NotImplementedError("NoteService.delete_note is not implemented yet.")
+        notes = self._load_notes()
+        filtered = [note for note in notes if note.id != note_id]
+        if len(filtered) == len(notes):
+            raise LookupError(f"Note with id {note_id} not found.")
+        self._save_notes(filtered)
 
     def add_tag(self, note_id: UUID, tag: str) -> None:
-        """Attach ``tag`` to a note.
-
-        Adding a tag that is already present leaves the note unchanged.
-
-        Args:
-            note_id: Identifier of the note to change.
-            tag: Tag text. Implementations should reject a blank tag.
-
-        Raises:
-            NotImplementedError: Tag management is not implemented yet.
-            LookupError: If no stored note uses ``note_id``.
-            ValueError: If ``tag`` is empty.
-        """
         raise NotImplementedError("NoteService.add_tag is not implemented yet.")
 
     def remove_tag(self, note_id: UUID, tag: str) -> None:
-        """Remove ``tag`` from a note.
-
-        Removing a tag that is not present leaves the note unchanged.
-
-        Args:
-            note_id: Identifier of the note to change.
-            tag: Tag text to remove.
-
-        Raises:
-            NotImplementedError: Tag management is not implemented yet.
-            LookupError: If no stored note uses ``note_id``.
-            ValueError: If ``tag`` is empty.
-        """
         raise NotImplementedError("NoteService.remove_tag is not implemented yet.")
 
     def find_by_tag(self, tag: str) -> list[Note]:
-        """Return notes that include ``tag``.
-
-        Args:
-            tag: Tag to match, ignoring case.
-
-        Returns:
-            Notes that carry the tag. An empty list means nothing matched.
-
-        Raises:
-            NotImplementedError: Tag search is not implemented yet.
-            ValueError: If ``tag`` is empty.
-        """
         raise NotImplementedError("NoteService.find_by_tag is not implemented yet.")
-
-
-__all__ = ["NoteService"]
