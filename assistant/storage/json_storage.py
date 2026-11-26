@@ -1,6 +1,8 @@
 """JSON file implementation of the storage contract."""
 
 import json
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -47,9 +49,19 @@ class JSONStorage(Storage):
         except TypeError as exc:
             raise StorageError(f"Could not encode JSON for {self._path}.") from exc
         try:
+            tmp_name = None
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            self._path.write_text(payload, encoding="utf-8")
+            tmp_fd, tmp_name = tempfile.mkstemp(dir=self._path.parent)
+            with os.fdopen(tmp_fd, "w", encoding="utf-8") as tmp_file:
+                tmp_file.write(payload)
+            os.replace(tmp_name, self._path)
+
         except OSError as exc:
+            if tmp_name is not None:
+                try:
+                    os.unlink(tmp_name)
+                except OSError:
+                    pass
             raise StorageError(f"Could not write {self._path}.") from exc
 
     def load(self) -> list[dict[str, Any]]:

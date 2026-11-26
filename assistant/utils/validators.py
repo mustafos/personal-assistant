@@ -4,6 +4,13 @@ The phone and email rules are not defined yet. Keep those rules here so the
 CLI and the services can share them later.
 """
 
+import re
+
+PHONE_PATTERN = re.compile(r"\+\d{8,15}")
+EMAIL_PATTERN = re.compile(
+    r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"
+)
+
 
 def is_valid_phone(value: str) -> bool:
     """Return whether ``value`` is an acceptable phone number.
@@ -12,15 +19,15 @@ def is_valid_phone(value: str) -> bool:
         value: Candidate phone number.
 
     Returns:
-        This function does not return until the rule is implemented.
+        True, якщо номер у форматі E.164, інакше False
 
     Raises:
         TypeError: If ``value`` is not a string.
-        NotImplementedError: Phone rules are not defined yet.
     """
     if not isinstance(value, str):
         raise TypeError("Phone number must be a string.")
-    raise NotImplementedError("Phone validation is not implemented yet.")
+    cleaned = re.sub(r"[\s-]", "", value)
+    return PHONE_PATTERN.fullmatch(cleaned) is not None
 
 
 def is_valid_email(value: str) -> bool:
@@ -30,7 +37,7 @@ def is_valid_email(value: str) -> bool:
         value: Candidate email address.
 
     Returns:
-        This function does not return until the rule is implemented.
+        локальна частина, @, домен, зона з 2+літер
 
     Raises:
         TypeError: If ``value`` is not a string.
@@ -38,7 +45,8 @@ def is_valid_email(value: str) -> bool:
     """
     if not isinstance(value, str):
         raise TypeError("Email address must be a string.")
-    raise NotImplementedError("Email validation is not implemented yet.")
+    cleaned = value.strip()
+    return EMAIL_PATTERN.fullmatch(cleaned) is not None
 
 
 __all__ = ["is_valid_email", "is_valid_phone"]
