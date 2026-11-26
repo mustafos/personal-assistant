@@ -245,6 +245,13 @@ def test_default_output_prints_welcome(
     assert captured.err == ""
 
 
+def test_default_data_dir_is_in_the_user_home(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PERSONAL_ASSISTANT_DATA_DIR", raising=False)
+    assert default_data_dir() == Path.home() / ".personal-assistant"
+
+
 def test_data_dir_can_be_overridden(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

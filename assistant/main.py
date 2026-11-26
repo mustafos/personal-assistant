@@ -18,20 +18,19 @@ from assistant.storage.json_storage import JSONStorage
 
 CONTACTS_FILE = "contacts.json"
 NOTES_FILE = "notes.json"
-DEFAULT_DATA_DIR = Path("data")
 DATA_DIR_ENV = "PERSONAL_ASSISTANT_DATA_DIR"
 
 
 def default_data_dir() -> Path:
     """Return the directory used for JSON data files.
 
-    The default is ``data`` in the current working directory. Set
-    ``PERSONAL_ASSISTANT_DATA_DIR`` to use another directory.
+    The default is ``.personal-assistant`` in the user's home directory.
+    Set ``PERSONAL_ASSISTANT_DATA_DIR`` to use another directory.
     """
     override = os.environ.get(DATA_DIR_ENV)
     if override:
         return Path(override)
-    return DEFAULT_DATA_DIR
+    return Path.home() / ".personal-assistant"
 
 
 def build_app(
