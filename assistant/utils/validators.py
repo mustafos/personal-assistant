@@ -1,8 +1,4 @@
-"""Reusable validation functions.
-
-The phone and email rules are not defined yet. Keep those rules here so the
-CLI and the services can share them later.
-"""
+"""Phone and email checks shared by the CLI and the services."""
 
 import re
 
@@ -19,7 +15,8 @@ def is_valid_phone(value: str) -> bool:
         value: Candidate phone number.
 
     Returns:
-        True, якщо номер у форматі E.164, інакше False
+        True when ``value`` is a leading ``+`` followed by 8 to 15 digits.
+        Spaces and hyphens are ignored. Parentheses are rejected.
 
     Raises:
         TypeError: If ``value`` is not a string.
@@ -37,11 +34,11 @@ def is_valid_email(value: str) -> bool:
         value: Candidate email address.
 
     Returns:
-        локальна частина, @, домен, зона з 2+літер
+        True when ``value`` has a local part, ``@``, a domain, and a
+        top-level label of at least two letters.
 
     Raises:
         TypeError: If ``value`` is not a string.
-        NotImplementedError: Email rules are not defined yet.
     """
     if not isinstance(value, str):
         raise TypeError("Email address must be a string.")

@@ -1,8 +1,11 @@
 # CLI contracts
 
-Commands are registered in `assistant/cli/commands.py`. The handlers still
-raise `NotImplementedError` after checking the command shape. This page is the
-behavior those handlers must grow into. It does not add service methods.
+Commands are registered in `assistant/cli/commands.py`. The shipped handlers
+take arguments on the command line, as shown in the README. Quoted text keeps
+spaces inside one argument. Invalid values are printed and the loop continues.
+
+The prompt examples below are the earlier field-by-field design. They are not
+what the current commands ask for.
 
 `find`, `list`, `search`, `delete`, and `birthdays` take their arguments on
 the command line. `add` and `update` ask for fields after the command.
