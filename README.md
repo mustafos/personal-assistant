@@ -3,25 +3,36 @@
 Command-line address book and notes. Contacts, notes, and tags are stored as
 JSON in the user's home directory and stay there after the program exits.
 
-## Install
+![Personal Assistant command list](docs/images/cli.png)
 
-Requires Python 3.12 or newer.
+## Run
+
+Requires Python 3.12 or newer. Run these commands from the project folder.
+
+### macOS and Linux
 
 ```bash
+cd personal-assistant
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
+python -m assistant
 ```
 
-Start the assistant from any directory:
+### Windows
 
-```bash
-personal-assistant
+```cmd
+cd personal-assistant
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+py -3.12 -m pip install -e ".[dev]"
+py -3.12 -m assistant
 ```
 
-Leave with `exit` or `quit`. `help` lists commands. `help <command>` prints
-that command's usage. A bad command or a bad value prints an error and the
-program keeps running.
+The command list appears, then a `>` prompt. Type a command and press Enter.
+`help` lists commands again. `help add-contact` prints one command's usage.
+`exit` or `quit` closes the program. A bad command or a bad value prints an
+error and the program keeps running.
 
 ## Contacts
 
