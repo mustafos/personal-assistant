@@ -215,17 +215,25 @@ class NoteService:
             tag: Tag to match, ignoring case.
 
         Returns:
-            Notes that carry the tag. An empty list means nothing matched.
+            Notes that carry the tag, sorted by their tags and then by title.
+            An empty list means nothing matched.
 
         Raises:
             ValueError: If ``tag`` is empty.
         """
         cleaned_tag = self._normalize_tag(tag).casefold()
-        return [
+        matches = [
             note
             for note in self._load_notes()
-            if any(t.casefold() == cleaned_tag for t in note.tags)
+            if any(existing.casefold() == cleaned_tag for existing in note.tags)
         ]
+        return sorted(
+            matches,
+            key=lambda note: (
+                tuple(sorted(item.casefold() for item in note.tags)),
+                note.title.casefold(),
+            ),
+        )
 
 
 __all__ = ["NoteService"]
