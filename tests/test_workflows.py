@@ -32,7 +32,8 @@ def test_end_to_end_contacts_notes_tags_birthdays_update_and_restart(
     session_1 = _run_session(
         tmp_path,
         [
-            f'add-contact "Olena Koval" +380501112233 olena@example.com "Kyiv" {birthday_str}',
+            'add-contact "Olena Koval" +380501112233 '
+            f'olena@example.com "Kyiv" {birthday_str}',
             "list-contacts",
             "birthdays 7",
             "exit",
@@ -95,14 +96,14 @@ def test_end_to_end_contacts_notes_tags_birthdays_update_and_restart(
             [
                 "unknown-command arg1",
                 "find-note not-a-valid-uuid",
-             f"find-note {missing_id}",
-             f"update-contact {missing_id} email a@b.com",
-             f"remove-tag {missing_id} work",
-             "notes-by-tag nonexistent-tag",
-             'add-note "Unclosed title "missing end quote',
-             "exit",
-        ],
-    )
+                f"find-note {missing_id}",
+                f"update-contact {missing_id} email a@b.com",
+                f"remove-tag {missing_id} work",
+                "notes-by-tag nonexistent-tag",
+                'add-note "Unclosed title "missing end quote',
+                "exit",
+            ],
+        )
         text = "\n".join(outputs)
         assert "Unknown command: 'unknown-command'" in text
         assert text.endswith("Goodbye.")

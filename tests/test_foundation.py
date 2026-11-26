@@ -1,5 +1,6 @@
 """Behavior tests for the application foundation."""
 
+import re
 import tomllib
 from datetime import date
 from pathlib import Path
@@ -43,6 +44,13 @@ EXPECTED_COMMANDS = (
 )
 
 
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(text: str) -> str:
+    return _ANSI.sub("", text)
+
+
 def _run(tmp_path: Path, lines: list[str]) -> str:
     incoming = iter(lines)
 
@@ -52,7 +60,7 @@ def _run(tmp_path: Path, lines: list[str]) -> str:
     messages: list[str] = []
     cli = build_app(tmp_path, input_func=read_line, output_func=messages.append)
     cli.run()
-    return "\n".join(messages)
+    return _plain("\n".join(messages))
 
 
 def test_package_metadata_matches_project_config() -> None:
@@ -62,7 +70,7 @@ def test_package_metadata_matches_project_config() -> None:
     assert project["name"] == "personal-assistant"
     assert project["version"] == assistant.__version__
     assert project["requires-python"] == ">=3.12"
-    assert project["dependencies"] == []
+    assert project["dependencies"] == ["colorama"]
     assert project["scripts"]["personal-assistant"] == "assistant.main:main"
 
 
@@ -161,33 +169,15 @@ def test_blank_storage_file_loads_as_empty(tmp_path: Path) -> None:
     assert storage.load() == []
 
 
-def test_services_do_not_persist_or_implement_operations(tmp_path: Path) -> None:
+def test_missing_tag_does_not_create_storage(tmp_path: Path) -> None:
     contact_storage = JSONStorage(tmp_path / "contacts.json")
     note_storage = JSONStorage(tmp_path / "notes.json")
-    contacts = ContactService(contact_storage)
+    birthdays = BirthdayService(ContactService(contact_storage))
     notes = NoteService(note_storage)
-    birthdays = BirthdayService(contacts)
-    contact = Contact(name="Ada Lovelace")
-    note = Note(title="Lecture")
 
-    with pytest.raises(NotImplementedError):
-        contacts.add_contact(contact)
-    with pytest.raises(NotImplementedError):
-        contacts.get_contact(contact.id)
-    with pytest.raises(NotImplementedError):
-        contacts.update_contact(contact)
-    with pytest.raises(NotImplementedError):
-        contacts.delete_contact(contact.id)
-    with pytest.raises(NotImplementedError):
-        contacts.list_contacts()
-    with pytest.raises(NotImplementedError):
-        notes.add_note(note)
-    with pytest.raises(NotImplementedError):
-        notes.find_by_tag("school")
+    assert notes.find_by_tag("school") == []
     with pytest.raises(ValueError):
         birthdays.upcoming_birthdays(-1)
-    with pytest.raises(NotImplementedError):
-        birthdays.upcoming_birthdays(7)
 
     assert not contact_storage.path.exists()
     assert not note_storage.path.exists()
@@ -218,14 +208,15 @@ def test_cli_help_usage_and_unknown_command(tmp_path: Path) -> None:
     assert output.endswith("Goodbye.")
 
 
-def test_cli_reports_unimplemented_commands(tmp_path: Path) -> None:
+def test_cli_runs_contact_and_birthday_commands(tmp_path: Path) -> None:
     output = _run(
         tmp_path,
-        ["add-contact Ada Lovelace", "add-contact", "birthdays", "exit"],
+        ["add-contact Ada", "add-contact", "birthdays", "exit"],
     )
 
-    assert output.count("This command is not implemented yet.") == 2
+    assert "Contact added:" in output
     assert "Usage: add-contact <name>" in output
+    assert "No upcoming birthdays within 7 days." in output
 
 
 def test_cli_exits_on_end_of_input(tmp_path: Path) -> None:
@@ -236,7 +227,7 @@ def test_cli_exits_on_end_of_input(tmp_path: Path) -> None:
     cli = build_app(tmp_path, input_func=read_line, output_func=messages.append)
     cli.run()
 
-    text = "\n".join(messages)
+    text = _plain("\n".join(messages))
     assert "Personal Assistant" in text
     assert text.endswith("Goodbye.")
 

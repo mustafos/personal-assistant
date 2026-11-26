@@ -103,9 +103,7 @@ class NoteService:
             return []
 
         return [
-            note
-            for note in self._load_notes()
-            if self._matches_query(note, needle)
+            note for note in self._load_notes() if self._matches_query(note, needle)
         ]
 
     def update_note(self, note: Note) -> None:

@@ -10,44 +10,35 @@ from assistant.services.contact_service import ContactService
 class BirthdayService:
     """Find contacts with upcoming birthdays.
 
-    Read contacts through :meth:`ContactService.list_contacts` and keep each
-    contact's ``id``. This service does not receive a storage backend.
+    Contacts are read through :meth:`ContactService.list_contacts`. This
+    service does not receive a storage backend.
+
+    A birthday on 29 February is celebrated on 28 February in years that are
+    not leap years.
     """
 
     def __init__(self, contact_service: ContactService) -> None:
         """Store the contact service used to read birthdays.
 
         Args:
-            contact_service: Service that will provide stored contacts.
+            contact_service: Service that provides stored contacts.
         """
         self._contact_service = contact_service
-
-    @staticmethod
-    def _anniversary_for_year(birthday: date, year: int) -> date:
-        """Return the birthday date in ``year`` (Feb 29 -> Feb 28 in non-leap years)."""
-        if birthday.month == 2 and birthday.day == 29 and not calendar.isleap(year):
-            return date(year, 2, 28)
-        return date(year, birthday.month, birthday.day)
-
-    def _next_occurrence(self, birthday: date, reference_date: date) -> date:
-        """Return the next birthday date on or after ``reference_date``."""
-        anniversary = self._anniversary_for_year(birthday, reference_date.year)
-        if anniversary < reference_date:
-            anniversary = self._anniversary_for_year(birthday, reference_date.year + 1)
-        return anniversary
 
     def upcoming_birthdays(self, within_days: int) -> list[Contact]:
         """Return contacts whose birthday falls inside the given window.
 
         The window starts today and includes the day ``within_days`` days
-        from today. Contacts without a birthday are skipped. In non-leap years,
-        Feb 29 is treated as Feb 28.
+        from today. It may cross the end of the year. Contacts without a
+        birthday are skipped. A 29 February birthday counts as 28 February
+        in a non-leap year.
 
         Args:
             within_days: Length of the window. Zero means today only.
 
         Returns:
-            Matching contacts.
+            Matching contacts, nearest birthday first. Contacts with the same
+            date keep their stored order. An empty list means none matched.
 
         Raises:
             TypeError: If ``within_days`` is not an integer.
@@ -58,19 +49,34 @@ class BirthdayService:
         if within_days < 0:
             raise ValueError("within_days must be zero or greater.")
 
-        today = date.today()
-        window_end = today + timedelta(days=within_days)
-
-        upcoming: list[Contact] = []
+        today = self._today()
+        end = today + timedelta(days=within_days)
+        upcoming: list[tuple[date, Contact]] = []
         for contact in self._contact_service.list_contacts():
             if contact.birthday is None:
                 continue
+            next_date = _next_birthday(contact.birthday, today)
+            if next_date <= end:
+                upcoming.append((next_date, contact))
+        upcoming.sort(key=lambda item: item[0])
+        return [contact for _, contact in upcoming]
 
-            next_birthday = self._next_occurrence(contact.birthday, today)
-            if today <= next_birthday <= window_end:
-                upcoming.append(contact)
+    @staticmethod
+    def _today() -> date:
+        return date.today()
 
-        return upcoming
+
+def _birthday_in_year(birthday: date, year: int) -> date:
+    if birthday.month == 2 and birthday.day == 29 and not calendar.isleap(year):
+        return date(year, 2, 28)
+    return birthday.replace(year=year)
+
+
+def _next_birthday(birthday: date, today: date) -> date:
+    candidate = _birthday_in_year(birthday, today.year)
+    if candidate < today:
+        candidate = _birthday_in_year(birthday, today.year + 1)
+    return candidate
 
 
 __all__ = ["BirthdayService"]

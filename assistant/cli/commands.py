@@ -11,12 +11,12 @@ from datetime import date
 from uuid import UUID
 
 from assistant.models.contact import Contact
+from assistant.models.fields import EmailAddress, PhoneNumber, normalize_label
+from assistant.models.note import Note
 from assistant.services.birthday_service import BirthdayService
 from assistant.services.contact_service import ContactService
 from assistant.services.note_service import NoteService
 from assistant.utils.helpers import normalize_whitespace
-from assistant.models.fields import EmailAddress, PhoneNumber, normalize_label
-from assistant.models.note import Note
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +55,8 @@ class CommandRegistry:
     def list_commands(self) -> list[Command]:
         """Return commands in registration order."""
         return list(self._commands.values())
-    
+
+
 def _parse_birthday(raw: str) -> date:
     """Parse the date of birth in the YYYY-MM-DD format."""
     return date.fromisoformat(raw.strip())
@@ -77,7 +78,8 @@ def _format_note(note: Note) -> str:
     tags = ", ".join(note.tags) if note.tags else "-"
     content = note.content if note.content else "-"
     return f"id={note.id} | title={note.title} | content={content} | tags=[{tags}]"
-    
+
+
 class CommandHandler:
     """Scaffold for CLI commands.
 
@@ -103,7 +105,7 @@ class CommandHandler:
         self._birthdays = birthdays
 
     def add_contact(self, args: list[str]) -> str:
-        """Adds a new contact: add-contact <name> [phone] [email] [address] [birthday]."""
+        """Add a contact: add-contact <name> [phone] [email] [address] [birthday]."""
         if not args:
             return "Usage: add-contact <name> [phone] [email] [address] [birthday]"
 
@@ -146,7 +148,6 @@ class CommandHandler:
             return "No contacts found."
 
         return "\n".join(_format_contact(contact) for contact in contacts)
-    
 
     def find_contact(self, args: list[str]) -> str:
         """Finds a contact by UUID and shows their card: find-contact <id>."""
@@ -182,10 +183,12 @@ class CommandHandler:
 
         return "\n".join(_format_contact(contact) for contact in matches)
 
-   def update_contact(self, args: list[str]) -> str:
-        """Updates the contact field by UUID: update-contact <id> <name|phone|email|address|birthday> <value>."""
+    def update_contact(self, args: list[str]) -> str:
+        """Update one contact field by UUID."""
         if len(args) < 3:
-            return "Usage: update-contact <id> <name|phone|email|address|birthday> <value>"
+            return (
+                "Usage: update-contact <id> <name|phone|email|address|birthday> <value>"
+            )
 
         try:
             contact_id = UUID(args[0])
@@ -232,7 +235,7 @@ class CommandHandler:
 
         self._contacts.update_contact(updated)
         return f"Contact updated: {_format_contact(updated)}"
-       
+
     def delete_contact(self, args: list[str]) -> str:
         """Removes a contact by UUID: delete-contact <id>."""
         parsed = _require_id(args, "delete-contact <id>")
@@ -258,7 +261,9 @@ class CommandHandler:
             raw_tags = args[2:] if len(args) > 3 else args[2].split(",")
             for part in raw_tags:
                 cleaned_tag = normalize_label(part, field_name="Tag")
-                if all(existing.casefold() != cleaned_tag.casefold() for existing in tags):
+                if all(
+                    existing.casefold() != cleaned_tag.casefold() for existing in tags
+                ):
                     tags.append(cleaned_tag)
 
         note = Note(
@@ -278,7 +283,7 @@ class CommandHandler:
         notes = self._notes.list_notes()
         if not notes:
             return "No notes found."
-        
+
         return "\n".join(_format_note(note) for note in notes)
 
     def find_note(self, args: list[str]) -> str:
@@ -306,7 +311,7 @@ class CommandHandler:
         return "\n".join(_format_note(note) for note in matches)
 
     def update_note(self, args: list[str]) -> str:
-        """Updates the note field by UUID: update-note <id> <title|content|tags> <value>."""
+        """Update one note field by UUID."""
         if len(args) < 3:
             return "Usage: update-note <id> <title|content|tags> <value>"
 
@@ -339,7 +344,10 @@ class CommandHandler:
             for part in raw_value.split(","):
                 if part.strip():
                     cleaned_tag = normalize_label(part, field_name="Tag")
-                    if all(existing.casefold() != cleaned_tag.casefold() for existing in new_tags):
+                    if all(
+                        existing.casefold() != cleaned_tag.casefold()
+                        for existing in new_tags
+                    ):
                         new_tags.append(cleaned_tag)
             tags = new_tags
         else:
@@ -352,7 +360,7 @@ class CommandHandler:
             id=current.id,
         )
         self._notes.update_note(updated)
-        
+
         return f"Note updated: {_format_note(updated)}"
 
     def delete_note(self, args: list[str]) -> str:

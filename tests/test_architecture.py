@@ -68,6 +68,7 @@ def test_services_depend_on_models_and_storage_abstraction() -> None:
         "assistant.models",
         "assistant.services",
         "assistant.storage.storage",
+        "assistant.utils.validators",
     )
     service_files = (
         "contact_service.py",

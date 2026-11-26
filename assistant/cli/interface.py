@@ -59,8 +59,10 @@ def _colorize_row(plain_row: str, *, rainbow: bool = False, color: str = "") -> 
     return plain_row
 
 
-def _resolve_page_width(*, preferred: int = 38, min_width: int = 26, max_width: int = 42) -> int:
-    """Fit two pages + spine safely inside the current terminal width without wrapping."""
+def _resolve_page_width(
+    *, preferred: int = 38, min_width: int = 26, max_width: int = 42
+) -> int:
+    """Fit two pages and a spine inside the terminal width."""
     term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
     available_per_page = max(12, (term_cols - 2) // 2)
     return max(min_width, min(preferred, max_width, available_per_page))
@@ -85,11 +87,11 @@ def _render_book_spread(
         total_rows - len(right_plain_rows)
     )
 
- # Each page with side walls `|` has a width of `inner + 2`, with 1 space between them:
- # Left wall `|` -> index 0
- # Right wall of the left page `|` -> index inner + 1
- # Left wall of the right page `|` -> index inner + 3
- # Right wall of the right page `|` -> index 2 * inner + 4
+    # Each page wall span is `inner + 2`, with one space between pages:
+    # Left wall `|` -> index 0
+    # Right wall of the left page `|` -> index inner + 1
+    # Left wall of the right page `|` -> index inner + 3
+    # Right wall of the right page `|` -> index 2 * inner + 4
     top = f" {'_' * inner}   {'_' * inner}"
     arch = f"/{' ' * inner}\\ /{' ' * inner}\\"
     lines: list[str] = [top, arch]
@@ -111,7 +113,6 @@ def _render_book_spread(
     lines.append(f"|{left_footer}| |{right_footer}|")
 
     lines.append(f"\\{'_' * inner}/_\\{'_' * inner}/")
-
 
     return "\n".join(lines)
 
@@ -216,7 +217,7 @@ class CLI:
         page_width = _resolve_page_width(preferred=38, min_width=26, max_width=40)
         inner = page_width - 2
         commands = self._commands.list_commands()
-        cmd_count = len(commands) + 2  
+        cmd_count = len(commands) + 2
 
         all_names = [cmd.name for cmd in commands] + ["help", "exit / quit"]
         longest_name = max((len(n) for n in all_names), default=12)
