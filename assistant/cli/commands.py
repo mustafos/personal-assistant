@@ -1,8 +1,7 @@
 """CLI command definitions.
 
-Commands are registered here. Handlers check argument shape and stop.
-Search, persistence, tag rules, and birthday calculations stay unimplemented
-in the service layer.
+Commands are registered here. Handlers validate the command line and call
+the injected services.
 """
 
 from collections.abc import Callable
@@ -166,17 +165,6 @@ class CommandHandler:
         if query is None:
             return "Usage: search-contacts <query>"
 
-        total_contacts = len(self._contacts.list_contacts())
-        if query.isdigit():
-            index = int(query)
-            if index <= 0:
-                return f"No contacts matching '{query}'."
-            if index > total_contacts:
-                return (
-                    f"Contact #{index} does not exist "
-                    f"(only {total_contacts} contacts available)."
-                )
-
         matches = self._contacts.search_contacts(query)
         if not matches:
             return f"No contacts matching '{query}'."
@@ -214,7 +202,7 @@ class CommandHandler:
         if field_name == "name":
             name = normalize_whitespace(raw_value)
         elif field_name == "address":
-            address = None if is_clear else normalize_whitespace(raw_value)
+            address = "" if is_clear else normalize_whitespace(raw_value)
         elif field_name == "phone":
             phones = [] if is_clear else [PhoneNumber(raw_value)]
         elif field_name == "email":
@@ -412,14 +400,7 @@ class CommandHandler:
         if not notes:
             return f"No notes with tag '{tag}'."
 
-        sorted_notes = sorted(
-            notes,
-            key=lambda note: (
-                sorted(existing.casefold() for existing in note.tags),
-                note.title.casefold(),
-            ),
-        )
-        return "\n".join(_format_note(note) for note in sorted_notes)
+        return "\n".join(_format_note(note) for note in notes)
 
     def birthdays(self, args: list[str]) -> str:
         """Displays contacts with upcoming birthdays: birthdays [days]."""

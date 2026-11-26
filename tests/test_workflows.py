@@ -89,21 +89,22 @@ def test_end_to_end_contacts_notes_tags_birthdays_update_and_restart(
     assert "content=Final v1.0 ready" in text_4
     assert "No upcoming birthdays within 7 days." not in text_4
 
-    def test_invalid_commands_and_malformed_input_do_not_crash(tmp_path: Path) -> None:
-        missing_id = "00000000-0000-0000-0000-000000000000"
-        outputs = _run_session(
-            tmp_path,
-            [
-                "unknown-command arg1",
-                "find-note not-a-valid-uuid",
-                f"find-note {missing_id}",
-                f"update-contact {missing_id} email a@b.com",
-                f"remove-tag {missing_id} work",
-                "notes-by-tag nonexistent-tag",
-                'add-note "Unclosed title "missing end quote',
-                "exit",
-            ],
-        )
-        text = "\n".join(outputs)
-        assert "Unknown command: 'unknown-command'" in text
-        assert text.endswith("Goodbye.")
+
+def test_invalid_commands_and_malformed_input_do_not_crash(tmp_path: Path) -> None:
+    missing_id = "00000000-0000-0000-0000-000000000000"
+    outputs = _run_session(
+        tmp_path,
+        [
+            "unknown-command arg1",
+            "find-note not-a-valid-uuid",
+            f"find-note {missing_id}",
+            f"update-contact {missing_id} email a@b.com",
+            f"remove-tag {missing_id} work",
+            "notes-by-tag nonexistent-tag",
+            'add-note "Unclosed title "missing end quote',
+            "exit",
+        ],
+    )
+    text = "\n".join(outputs)
+    assert "Unknown command: 'unknown-command'" in text
+    assert text.endswith("Goodbye.")
