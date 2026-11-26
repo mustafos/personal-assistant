@@ -182,7 +182,7 @@ class CommandHandler:
 
         return "\n".join(_format_contact(contact) for contact in matches)
 
-    def update_contact(self, args: list[str]) -> str:
+   def update_contact(self, args: list[str]) -> str:
         """Updates the contact field by UUID: update-contact <id> <name|phone|email|address|birthday> <value>."""
         if len(args) < 3:
             return "Usage: update-contact <id> <name|phone|email|address|birthday> <value>"
@@ -206,17 +206,18 @@ class CommandHandler:
         phones = list(current.phones)
         email = current.email
         birthday = current.birthday
+        is_clear = raw_value.strip().casefold() == "clear"
 
         if field_name == "name":
             name = normalize_whitespace(raw_value)
         elif field_name == "address":
-            address = normalize_whitespace(raw_value)
+            address = None if is_clear else normalize_whitespace(raw_value)
         elif field_name == "phone":
-            phones = [PhoneNumber(raw_value)]
+            phones = [] if is_clear else [PhoneNumber(raw_value)]
         elif field_name == "email":
-            email = EmailAddress(raw_value)
+            email = None if is_clear else EmailAddress(raw_value)
         elif field_name == "birthday":
-            birthday = _parse_birthday(raw_value)
+            birthday = None if is_clear else _parse_birthday(raw_value)
         else:
             return "Usage: update-contact <id> <name|phone|email|birthday> <value>"
 
@@ -231,7 +232,7 @@ class CommandHandler:
 
         self._contacts.update_contact(updated)
         return f"Contact updated: {_format_contact(updated)}"
-
+       
     def delete_contact(self, args: list[str]) -> str:
         """Removes a contact by UUID: delete-contact <id>."""
         parsed = _require_id(args, "delete-contact <id>")
