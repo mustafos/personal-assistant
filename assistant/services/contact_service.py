@@ -17,9 +17,6 @@ class ContactService:
     unique, so they cannot identify a record.
 
     Search may compare text case-insensitively. Stored capitalization is kept.
-    Each method raises ``NotImplementedError`` until it is implemented.
-    Other exceptions named on a method describe the contract the
-    implementation must follow.
     """
 
     def __init__(self, storage: Storage) -> None:
@@ -30,6 +27,31 @@ class ContactService:
         """
         self._storage = storage
 
+    def _load_contacts(self) -> list[Contact]:
+        """Load stored contact records and rebuild Contact instances."""
+        raw_records = self._storage.load()
+        return [Contact.from_dict(record) for record in raw_records]
+
+    def _save_contacts(self, contacts: list[Contact]) -> None:
+        """Serialize Contact instances and persist them via storage."""
+        self._storage.save([contact.to_dict() for contact in contacts])
+
+    @staticmethod
+    def _matches_query(contact: Contact, needle: str) -> bool:
+        """Check whether any contact field contains the lowercased needle."""
+        parts: list[str] = []
+
+        if contact.name:
+            parts.append(str(contact.name))
+        if contact.address:
+            parts.append(str(contact.address))
+        if contact.email:
+            parts.append(str(contact.email))
+        for phone in contact.phones:
+            parts.append(str(phone))
+
+        return any(needle in part.casefold() for part in parts)
+
     def add_contact(self, contact: Contact) -> None:
         """Store a new contact.
 
@@ -37,10 +59,14 @@ class ContactService:
             contact: Contact to add.
 
         Raises:
-            NotImplementedError: Saving contacts is not implemented yet.
             ValueError: If a contact with the same id already exists.
         """
-        raise NotImplementedError("ContactService.add_contact is not implemented yet.")
+        contacts = self._load_contacts()
+        if any(existing.id == contact.id for existing in contacts):
+            raise ValueError(f"Contact with id {contact.id} already exists.")
+
+        contacts.append(contact)
+        self._save_contacts(contacts)
 
     def get_contact(self, contact_id: UUID) -> Contact | None:
         """Return the contact identified by ``contact_id``.
@@ -50,24 +76,19 @@ class ContactService:
 
         Returns:
             The stored contact, or None when the id is unknown.
-
-        Raises:
-            NotImplementedError: Contact lookup is not implemented yet.
         """
-        raise NotImplementedError("ContactService.get_contact is not implemented yet.")
+        for contact in self._load_contacts():
+            if contact.id == contact_id:
+                return contact
+        return None
 
     def list_contacts(self) -> list[Contact]:
         """Return every stored contact.
 
         Returns:
             All contacts. The order matches the stored collection.
-
-        Raises:
-            NotImplementedError: Listing contacts is not implemented yet.
         """
-        raise NotImplementedError(
-            "ContactService.list_contacts is not implemented yet."
-        )
+        return self._load_contacts()
 
     def search_contacts(self, query: str) -> list[Contact]:
         """Find contacts that match ``query``.
@@ -80,13 +101,16 @@ class ContactService:
 
         Returns:
             Matching contacts. An empty list means nothing matched.
-
-        Raises:
-            NotImplementedError: Contact search is not implemented yet.
         """
-        raise NotImplementedError(
-            "ContactService.search_contacts is not implemented yet."
-        )
+        needle = query.strip().casefold()
+        if not needle:
+            return []
+
+        return [
+            contact
+            for contact in self._load_contacts()
+            if self._matches_query(contact, needle)
+        ]
 
     def update_contact(self, contact: Contact) -> None:
         """Replace the stored contact that has ``contact.id``.
@@ -96,12 +120,16 @@ class ContactService:
                 replace. The name may change and may match another contact.
 
         Raises:
-            NotImplementedError: Contact updates are not implemented yet.
             LookupError: If no stored contact uses ``contact.id``.
         """
-        raise NotImplementedError(
-            "ContactService.update_contact is not implemented yet."
-        )
+        contacts = self._load_contacts()
+        for index, existing in enumerate(contacts):
+            if existing.id == contact.id:
+                contacts[index] = contact
+                self._save_contacts(contacts)
+                return
+
+        raise LookupError(f"Contact not found: {contact.id}")
 
     def delete_contact(self, contact_id: UUID) -> None:
         """Remove the contact identified by ``contact_id``.
@@ -110,12 +138,14 @@ class ContactService:
             contact_id: Identifier of the contact to remove.
 
         Raises:
-            NotImplementedError: Contact deletion is not implemented yet.
             LookupError: If no stored contact uses ``contact_id``.
         """
-        raise NotImplementedError(
-            "ContactService.delete_contact is not implemented yet."
-        )
+        contacts = self._load_contacts()
+        remaining = [existing for existing in contacts if existing.id != contact_id]
+        if len(remaining) == len(contacts):
+            raise LookupError(f"Contact not found: {contact_id}")
+
+        self._save_contacts(remaining)
 
 
 __all__ = ["ContactService"]
