@@ -64,11 +64,7 @@ class NoteService:
         raise NotImplementedError("NoteService.add_tag is not implemented yet.")
 
     def remove_tag(self, note_id: UUID, tag: str) -> None:
-        raise NotImplementedError(
-            "NoteService.remove_tag is not implemented yet."
-        )
+        raise NotImplementedError("NoteService.remove_tag is not implemented yet.")
 
     def find_by_tag(self, tag: str) -> list[Note]:
-        raise NotImplementedError(
-            "NoteService.find_by_tag is not implemented yet."
-        )
+        raise NotImplementedError("NoteService.find_by_tag is not implemented yet.")

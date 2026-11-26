@@ -167,10 +167,7 @@ def test_note_service_is_not_implemented_yet(tmp_path: Path) -> None:
     note_storage = JSONStorage(tmp_path / "notes.json")
     birthdays = BirthdayService(ContactService(contact_storage))
     notes = NoteService(note_storage)
-    note = Note(title="Lecture")
 
-    with pytest.raises(NotImplementedError):
-        notes.add_note(note)
     with pytest.raises(NotImplementedError):
         notes.find_by_tag("school")
     with pytest.raises(ValueError):
